@@ -4,20 +4,28 @@ import joblib
 import re
 import string
 import os
-import urllib.request
+import gdown
 
-def download_from_drive(file_id, filename):
-    url = f"https://drive.google.com/uc?export=download&id={file_id}"
-    urllib.request.urlretrieve(url, filename)
+# Google Drive file IDs
+model_file_id = "1dUZlaBLfk4UfpYzv6H6Y1MXtet_bXqLO"
+vectorizer_file_id = "1l0KYxXZhif4v4lTr0cbHBXRsz1YD3K3U"
 
-# Download model if not already present
-if not os.path.exists("phishing_model.pkl"):
+# Output paths
+model_path = "phishing_model.pkl"
+vectorizer_path = "tfidf_vectorizer.pkl"
+
+# Full download links
+model_url = f"https://drive.google.com/uc?id={model_file_id}"
+vectorizer_url = f"https://drive.google.com/uc?id={vectorizer_file_id}"
+
+# Download if missing
+if not os.path.exists(model_path):
     print("Downloading phishing_model.pkl from Google Drive...")
-    download_from_drive("1dUZlaBLfk4UfpYzv6H6Y1MXtet_bXqLO", "phishing_model.pkl")
+    gdown.download(model_url, model_path, quiet=False)
 
-if not os.path.exists("tfidf_vectorizer.pkl"):
+if not os.path.exists(vectorizer_path):
     print("Downloading tfidf_vectorizer.pkl from Google Drive...")
-    download_from_drive("1l0KYxXZhif4v4lTr0cbHBXRsz1YD3K3U", "tfidf_vectorizer.pkl")
+    gdown.download(vectorizer_url, vectorizer_path, quiet=False)
 
 # Load trained model and vectorizer
 model = joblib.load("phishing_model.pkl")
