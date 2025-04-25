@@ -27,28 +27,39 @@ if not os.path.exists(vectorizer_path):
     print("Downloading tfidf_vectorizer.pkl from Google Drive...")
     gdown.download(vectorizer_url, vectorizer_path, quiet=False)
 
-# Load trained model and vectorizer
-model = joblib.load("phishing_model.pkl")
-vectorizer = joblib.load("tfidf_vectorizer.pkl")
+# Load model
+model = joblib.load(model_path)
+vectorizer = joblib.load(vectorizer_path)
 
 app = FastAPI()
 
-# Input format
 class EmailInput(BaseModel):
     text: str
 
-# Text preprocessing function
 def clean_text(text):
     text = text.lower()
     text = re.sub(f"[{string.punctuation}]", "", text)
     text = re.sub(r'\d+', '', text)
     return text
 
-# Endpoint to check phishing
 @app.post("/predict")
 def predict_phishing(input_data: EmailInput):
     cleaned_text = clean_text(input_data.text)
+
+    # Handle empty/meaningless text
+    if not cleaned_text.strip():
+        return {"prediction": "Invalid or empty input"}
+    if re.fullmatch(r"[\d\W]+", cleaned_text):
+        return {"prediction": "Unable to classify meaningless content"}
+
     vectorized = vectorizer.transform([cleaned_text])
-    prediction = model.predict(vectorized)[0]
-    result = "Phishing" if prediction == 1 else "Legitimate"
-    return {"prediction": result}
+    proba = model.predict_proba(vectorized)[0][1]  # probability of phishing
+
+    if proba >= 0.65:
+        result = "Phishing"
+    elif proba <= 0.35:
+        result = "Legitimate"
+    else:
+        result = "Uncertain"
+
+    return {"prediction": result, "confidence": f"{proba:.2f}"}
